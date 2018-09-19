@@ -3,9 +3,7 @@ package com.dankegongyu.fitviewdemo;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Paint;
-import android.os.Build.VERSION;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.View.MeasureSpec;
@@ -464,8 +462,7 @@ public class FitViewUtil {
         } else {
             mResources = context.getResources();
         }
-        DisplayMetrics mDisplayMetrics = mResources.getDisplayMetrics();
-        return mDisplayMetrics;
+        return mResources.getDisplayMetrics();
     }
 
     /**
