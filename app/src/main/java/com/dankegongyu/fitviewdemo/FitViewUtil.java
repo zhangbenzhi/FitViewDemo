@@ -4,12 +4,15 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Paint;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.View.MeasureSpec;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.TextView;
+
+import java.time.LocalDate;
 
 import static com.dankegongyu.fitviewdemo.BaseMyConfigConstant.UI_HEIGHT;
 import static com.dankegongyu.fitviewdemo.BaseMyConfigConstant.UI_PER_DIP;
@@ -118,11 +121,10 @@ public class FitViewUtil {
         float width = displayWidth;
         float height = displayHeight;
 
-        /*float min_size = Math.min(width, height);
-        float min_base_size = Math.min(UI_WIDTH, UI_HEIGHT);*/
-
         float scaleWidth = width / UI_WIDTH;
         float scaleHeight = height / UI_HEIGHT;
+
+        Log.e("TAG", displayWidth + "width" + displayHeight + "height");
 
         double displayDiagonal = Math.sqrt(Math.pow(width, 2) + Math.pow(height, 2));
         double designDiagonal = Math.sqrt(Math.pow(UI_WIDTH, 2) + Math.pow(UI_HEIGHT, 2));
@@ -288,16 +290,21 @@ public class FitViewUtil {
         if (params == null) {
             return;
         }
-        if (view instanceof ScaleWidthImageView) {
+        if (view instanceof ScaledWidthImageView) {
             heightPixels = getViewHeight(view);
+            Log.e("TAG",heightPixels+"heightPixels");
             int scaleValue = scaleHeigthValue(view.getContext(), heightPixels);
             params.height = scaleValue;
-            params.width = scaleValue;
-        } else if (view instanceof ScalueHeightImageView) {
+            int originalWidth = ((ScaledWidthImageView) view).getOriginalWidth();
+            int originalHeight = ((ScaledWidthImageView) view).getOriginalHeight();
+            params.width = (int) ((float) scaleValue * originalWidth / originalHeight);
+        } else if (view instanceof ScaledHeightImageView) {
             widthPixels = getViewWidth(view);
             int scaleValue = scaleWidthValue(view.getContext(), widthPixels);
             params.width = scaleValue;
-            params.height = scaleValue;
+            int originalWidth = ((ScaledHeightImageView) view).getOriginalWidth();
+            int originalHeight = ((ScaledHeightImageView) view).getOriginalHeight();
+            params.height = (int) ((float) scaleValue / originalWidth * originalHeight);
         } else {
             if (widthPixels != INVALID) {
                 params.width = scaleWidthValue(view.getContext(), widthPixels);
@@ -306,6 +313,7 @@ public class FitViewUtil {
                 params.height = scaleHeigthValue(view.getContext(), heightPixels);
             }
         }
+        Log.e("TAG", params.width + "width" + params.height + "height");
         view.setLayoutParams(params);
     }
 
