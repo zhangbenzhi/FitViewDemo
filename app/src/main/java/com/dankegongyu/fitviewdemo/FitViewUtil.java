@@ -9,13 +9,9 @@ import android.util.TypedValue;
 import android.view.View;
 import android.view.View.MeasureSpec;
 import android.view.ViewGroup;
-import android.view.ViewParent;
 import android.widget.TextView;
 
-import java.time.LocalDate;
-
 import static com.dankegongyu.fitviewdemo.BaseMyConfigConstant.UI_HEIGHT;
-import static com.dankegongyu.fitviewdemo.BaseMyConfigConstant.UI_PER_DIP;
 import static com.dankegongyu.fitviewdemo.BaseMyConfigConstant.UI_WIDTH;
 
 
@@ -55,6 +51,18 @@ public class FitViewUtil {
         }
         return view.getMeasuredHeight();
     }
+
+
+    /**
+     * 获取view的大小
+     *
+     * @param view
+     * @param runnable
+     */
+    public static void getViewSize(View view, Runnable runnable) {
+        view.post(runnable);
+    }
+
 
     /**
      * 描述：根据屏幕大小缩放.
@@ -285,36 +293,48 @@ public class FitViewUtil {
      * @param widthPixels
      * @param heightPixels
      */
-    public static void setViewSize(View view, int widthPixels, int heightPixels) {
-        ViewGroup.LayoutParams params = view.getLayoutParams();
+    public static void setViewSize(final View view, final int widthPixels, final int heightPixels) {
+        final ViewGroup.LayoutParams params = view.getLayoutParams();
         if (params == null) {
             return;
         }
-        if (view instanceof ScaledWidthImageView) {
-            heightPixels = getViewHeight(view);
-            Log.e("TAG",heightPixels+"heightPixels");
-            int scaleValue = scaleHeigthValue(view.getContext(), heightPixels);
-            params.height = scaleValue;
-            int originalWidth = ((ScaledWidthImageView) view).getOriginalWidth();
-            int originalHeight = ((ScaledWidthImageView) view).getOriginalHeight();
-            params.width = (int) ((float) scaleValue * originalWidth / originalHeight);
-        } else if (view instanceof ScaledHeightImageView) {
-            widthPixels = getViewWidth(view);
-            int scaleValue = scaleWidthValue(view.getContext(), widthPixels);
-            params.width = scaleValue;
-            int originalWidth = ((ScaledHeightImageView) view).getOriginalWidth();
-            int originalHeight = ((ScaledHeightImageView) view).getOriginalHeight();
-            params.height = (int) ((float) scaleValue / originalWidth * originalHeight);
-        } else {
-            if (widthPixels != INVALID) {
-                params.width = scaleWidthValue(view.getContext(), widthPixels);
+        //此方法可获取match_parent和wrap_content的view真实大小
+        getViewSize(view, new Runnable() {
+            @Override
+            public void run() {
+                if (view instanceof ScaledWidthImageView) {
+                    //此时获取的是真实的view的大小，如果是match_parent，wrap_content的，则不需要缩放
+                    int mesureHeight = getViewHeight(view);
+                    int scaleValue = mesureHeight;
+                    if (heightPixels != INVALID) {
+                        scaleValue = scaleHeigthValue(view.getContext(), mesureHeight);
+                    }
+                    params.height = scaleValue;
+                    int originalWidth = ((ScaledWidthImageView) view).getOriginalWidth();
+                    int originalHeight = ((ScaledWidthImageView) view).getOriginalHeight();
+                    params.width = (int) ((float) scaleValue * originalWidth / originalHeight);
+                } else if (view instanceof ScaledHeightImageView) {
+                    //此时获取的是真实的view的大小，如果是match_parent，wrap_content的，则不需要缩放
+                    int mesureWidth = getViewWidth(view);
+                    int scaleValue = mesureWidth;
+                    if (widthPixels != INVALID) {
+                        scaleValue = scaleWidthValue(view.getContext(), mesureWidth);
+                    }
+                    params.width = scaleValue;
+                    int originalWidth = ((ScaledHeightImageView) view).getOriginalWidth();
+                    int originalHeight = ((ScaledHeightImageView) view).getOriginalHeight();
+                    params.height = (int) ((float) scaleValue / originalWidth * originalHeight);
+                } else {
+                    if (widthPixels != INVALID) {
+                        params.width = scaleWidthValue(view.getContext(), widthPixels);
+                    }
+                    if (heightPixels != INVALID) {
+                        params.height = scaleHeigthValue(view.getContext(), heightPixels);
+                    }
+                }
+                view.setLayoutParams(params);
             }
-            if (heightPixels != INVALID) {
-                params.height = scaleHeigthValue(view.getContext(), heightPixels);
-            }
-        }
-        Log.e("TAG", params.width + "width" + params.height + "height");
-        view.setLayoutParams(params);
+        });
     }
 
     /**
@@ -369,92 +389,6 @@ public class FitViewUtil {
                 view.setLayoutParams(mMarginLayoutParams);
             }
         }
-    }
-
-    /**
-     * 获取请求图片的宽：考虑到像素密度的情况；
-     *
-     * @param view
-     * @return
-     */
-    public static int getRequestImageWidth(View view) {
-        int width = getViewWidth(view);
-        try {
-            ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
-            if (layoutParams != null) {
-                if (layoutParams.width == ViewGroup.LayoutParams.MATCH_PARENT) {
-                    ViewParent parent = view.getParent();
-                    if (parent != null && parent instanceof ViewGroup) {
-                        ViewGroup viewGroup = (ViewGroup) parent;
-                        ViewGroup.LayoutParams layoutParams1 = viewGroup.getLayoutParams();
-                        width = layoutParams1.width;
-                    }
-                } else if (layoutParams.width != ViewGroup.LayoutParams.WRAP_CONTENT) {
-                    width = layoutParams.width == 0 ? width : layoutParams.width;
-                }
-            }
-        } catch (Exception e) {
-        }
-        /*int per_dpi = getDisplayMetrics(Application.getInstance()).densityDpi;
-        float scale = (float) MyConfigConstant.UI_PER_DIP / per_dpi;
-        scale = scale == 0 ? 1 : scale;*/
-        width = (int) (width * 1.0);
-        return width;
-    }
-
-    /**
-     * 获取请求图片的宽：考虑到像素密度的情况；
-     *
-     * @return
-     */
-    public static int getRequestImageWidth(Context context, int width) {
-        int per_dpi = getDisplayMetrics(context).densityDpi;
-        float scale = (float) UI_PER_DIP / per_dpi;
-        scale = scale == 0 ? 1 : scale;
-        width = (int) (width * scale);
-        return width;
-    }
-
-    /**
-     * 获取请求图片的高：考虑到像素密度的情况；
-     *
-     * @param view
-     * @return
-     */
-    public static int getRequestImageHeight(View view) {
-        int height = getViewHeight(view);
-        try {
-            ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
-            if (layoutParams != null) {
-                if (layoutParams.width == ViewGroup.LayoutParams.MATCH_PARENT) {
-                    ViewParent parent = view.getParent();
-                    if (parent != null && parent instanceof ViewGroup) {
-                        ViewGroup viewGroup = (ViewGroup) parent;
-                        ViewGroup.LayoutParams layoutParams1 = viewGroup.getLayoutParams();
-                        height = layoutParams1.height;
-                    }
-                } else if (layoutParams.height != ViewGroup.LayoutParams.WRAP_CONTENT) {
-                    height = layoutParams.height == 0 ? height : layoutParams.height;
-                }
-            }
-        } catch (Exception e) {
-        }
-        /*int per_dpi = getDisplayMetrics(Application.getInstance()).densityDpi;
-        float scale = (float) MyConfigConstant.UI_PER_DIP / per_dpi;
-        scale = scale == 0 ? 1 : scale;*/
-        height = (int) (height * 1.0);
-        return height;
-    }
-
-    /**
-     * @return
-     */
-    public static int getRequestImageHeight(Context context, int height) {
-        int per_dpi = getDisplayMetrics(context).densityDpi;
-        float scale = (float) UI_PER_DIP / per_dpi;
-        scale = scale == 0 ? 1 : scale;
-        height = (int) (height * scale);
-        return height;
     }
 
     /**
